@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from "react";
 import {
   Box,
@@ -13,11 +14,10 @@ import {
   Checkbox,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
-import { Link, useNavigate } from "react-router-dom";
-import { useMessage } from "../contexts/MessageContext";
-import { useAuth } from "../contexts/AuthContext";
-import bgLarge from "../assets/stageBig-1920x1080.jpg";
-import bgSmall from "../assets/stage-1080x1920.jpg";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMessage } from "../../contexts/MessageContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 const Login = () => {
   const [form, setForm] = useState({
@@ -29,7 +29,7 @@ const Login = () => {
   const [success, setSuccess] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const navigate = useNavigate();
+  const router = useRouter();
   const { showMessage } = useMessage();
   const { login: handleLogin } = useAuth();
 
@@ -61,7 +61,7 @@ const Login = () => {
       setSuccess("Login successful!");
 
       if (userData.role === "admin") {
-        navigate("/admin");
+        router.push("/user");
       } else {
         showMessage("Unauthorized role. Contact support.");
       }
@@ -83,7 +83,7 @@ const Login = () => {
         justifyContent: "center",
         alignItems: "center",
         backgroundSize: "cover",
-        backgroundImage: { xs: `url(${bgSmall})`, sm: `url(${bgLarge})` },
+        // backgroundImage: { xs: `url(${bgSmall})`, sm: `url(${bgLarge})` },
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
       }}
@@ -101,7 +101,7 @@ const Login = () => {
         <Typography
           variant="h4"
           component={Link}
-          to="/"
+          href="/"
           sx={{
             fontWeight: 700,
             color: "primary.main",
@@ -109,11 +109,11 @@ const Login = () => {
             mb: 4,
           }}
         >
-          EventWheel
+          Mosaic Wall
         </Typography>
 
         <Typography variant="h6" sx={{ my: 2, color: "text.secondary" }}>
-          Welcome Back! Please Login to create an Event.
+          Welcome Back! Please Login.
         </Typography>
 
         {success && (
@@ -182,10 +182,7 @@ const Login = () => {
             {loading ? <CircularProgress size={24} color="inherit" /> : "Login"}
           </Button>
           <Typography sx={{ mt: 2 }}>
-            Don't have an account?{" "}
-            <Link component={Link} to="/register">
-              Register
-            </Link>
+            Don't have an account? <Link href="/auth/register">Register</Link>
           </Typography>
         </Box>
       </Paper>

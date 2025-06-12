@@ -1,7 +1,9 @@
+"use client";
+
 import React, { createContext, useState, useContext, useEffect } from "react";
-import { login as loginService, logoutUser } from "../services/authService";
-import {jwtDecode} from "jwt-decode"; 
-import { register as registerService } from "../services/authService";
+import { login as loginService, logoutUser } from "../../services/authService";
+import { jwtDecode } from "jwt-decode";
+import { register as registerService } from "../../services/authService";
 
 export const AuthContext = createContext();
 
@@ -20,24 +22,29 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-//Register Function
-const handleRegister = async (name, email, password) => {
-  setLoading(true);
-  try {
-    await registerService(name, email, password);
-  } finally {
-    setLoading(false);
-  }
-};
+  //Register Function
+  const handleRegister = async (name, email, password) => {
+    setLoading(true);
+    try {
+      await registerService(name, email, password);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Login Function
   const handleLogin = async (email, password, rememberMe) => {
     setLoading(true);
     try {
-      const { accessToken } = await loginService(email, password, rememberMe);
+      const { accessToken, user } = await loginService(
+        email,
+        password,
+        rememberMe
+      );
       localStorage.setItem("accessToken", accessToken);
-      
+
       const userData = extractUserFromToken(accessToken);
+      localStorage.setItem("user", JSON.stringify(user)); // Save user data to localStorage (so it can be used in Header or elsewhere)
       setUser(userData);
       return user;
     } finally {
@@ -49,6 +56,7 @@ const handleRegister = async (name, email, password) => {
   const handleLogout = async () => {
     await logoutUser();
     localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
     setUser(null);
   };
 

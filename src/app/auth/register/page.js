@@ -1,3 +1,4 @@
+"use client";
 // src/pages/Register.jsx
 import React, { useState } from "react";
 import {
@@ -11,11 +12,12 @@ import {
   Paper,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
-import { Link, useNavigate } from "react-router-dom";
-import { useMessage } from "../contexts/MessageContext";
-import { useAuth } from "../contexts/AuthContext";
-import bgLarge from "../assets/stageBig-1920x1080.jpg";
-import bgSmall from "../assets/stage-1080x1920.jpg";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMessage } from "../../contexts/MessageContext";
+import { useAuth } from "../../contexts/AuthContext";
+// import bgLarge from "../assets/stageBig-1920x1080.jpg";
+// import bgSmall from "../assets/stage-1080x1920.jpg";
 
 const Register = () => {
   const [form, setForm] = useState({
@@ -28,7 +30,7 @@ const Register = () => {
   const [success, setSuccess] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const navigate = useNavigate();
+  const router = useRouter();
   const { showMessage } = useMessage();
   const { register: handleRegister } = useAuth(); // Will add to AuthContext
 
@@ -56,7 +58,7 @@ const Register = () => {
     try {
       await handleRegister(form.name, form.email, form.password);
       setSuccess("Login successful!");
-      navigate("/");
+      router.push("/auth/login");
     } catch (err) {
       // For Joi validation errors (400 status)
       if (err.response?.status === 400) {
@@ -79,17 +81,19 @@ const Register = () => {
         justifyContent: "center",
         alignItems: "center",
         backgroundSize: "cover",
-        backgroundImage: { xs: `url(${bgSmall})`, sm: `url(${bgLarge})` },
+        // backgroundImage: { xs: `url(${bgSmall})`, sm: `url(${bgLarge})` },
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
         py: 6,
+        my: 6,
       }}
     >
       <Paper
         elevation={6}
         sx={{
           width: { xs: "90%", sm: 400 },
-          p: 4,
+
+          p: 3, // Reduced padding
           backgroundColor: "rgba(255, 255, 255, 0.8)",
           borderRadius: 2,
           textAlign: "center",
@@ -98,7 +102,7 @@ const Register = () => {
         <Typography
           variant="h4"
           component={Link}
-          to="/"
+          href="/"
           sx={{
             fontWeight: 700,
             color: "primary.main",
@@ -106,10 +110,10 @@ const Register = () => {
             mb: 4,
           }}
         >
-          EventWheel
+          Mosaic Wall
         </Typography>
         <Typography variant="h6" sx={{ my: 2, color: "text.secondary" }}>
-          Welcome! Please Sign Up to start creating amazing events.
+          Welcome! Please Sign Up.
         </Typography>
 
         <Box component="form" onSubmit={onSubmit}>
@@ -181,10 +185,7 @@ const Register = () => {
           </Button>
 
           <Typography sx={{ mt: 2 }}>
-            Already have an account?{" "}
-            <Link component={Link} to="/">
-              Login
-            </Link>
+            Already have an account? <Link href="/auth/login">Login</Link>
           </Typography>
         </Box>
       </Paper>
