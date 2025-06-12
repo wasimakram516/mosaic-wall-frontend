@@ -1,9 +1,9 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { Box, Typography, IconButton, Button } from "@mui/material";
-import LoginIcon from "@mui/icons-material/Login";
-import ScreenShareIcon from "@mui/icons-material/ScreenShare";
-import TvIcon from "@mui/icons-material/Tv";
+import { Box, Button, Typography } from "@mui/material";
+import Image from "next/image";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import {Shift} from "ambient-cbg"
 
 export default function Home() {
   const router = useRouter();
@@ -11,71 +11,69 @@ export default function Home() {
   return (
     <Box
       sx={{
-        position: "relative",
         width: "100vw",
         height: "100vh",
-        background: "blue",
-        overflow: "hidden",
+        color: "#fff",
         display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
         alignItems: "center",
-        justifyContent: "center",
-        textAlign: "center",
+        padding: 4,
       }}
     >
+      <Shift/>
+      {/* Header - WhiteWall Logo */}
+      <Box sx={{ mt: 2 }}>
+        <Image
+          src="/WWDSwhite.png" 
+          alt="WhiteWall Digital Solutions"
+          width={200}
+          height={60}
+          style={{ objectFit: "contain" }}
+        />
+      </Box>
+
       {/* Main Content */}
       <Box
         sx={{
-          position: "relative",
-          zIndex: 2,
-          background: "rgba(255, 255, 255, 0.2)",
-          borderRadius: 4,
-          padding: { xs: 3, sm: 5 },
-          maxWidth: 500,
-          width: "90%",
           textAlign: "center",
-          boxShadow: "0 0 30px rgba(0, 0, 0, 0.4)",
-          backdropFilter: "blur(6px)",
+          maxWidth: 600,
+          px: 2,
         }}
       >
-        <Box
+        <Typography variant="h3" fontWeight="bold" gutterBottom>
+          Mosaic Wall CMS
+        </Typography>
+        <Typography variant="h6" color="grey.300" mb={4}>
+          Real-time media display system powered by WhiteWall Digital Solutions.
+        </Typography>
+        <Button
+          size="large"
+          variant="contained"
+          startIcon={<DashboardIcon />}
+          onClick={() => router.push("/cms")}
           sx={{
-            display: "flex",
-            gap: 2,
-            flexDirection: { xs: "column", sm: "row" },
-            justifyContent: "center",
+            fontSize: "1.1rem",
+            px: 4,
+            py: 1.5,
+            backgroundColor: "#1976d2",
+            "&:hover": {
+              backgroundColor: "#1565c0",
+            },
           }}
         >
-          <Button
-            variant="contained"
-            size="large"
-            startIcon={<ScreenShareIcon />}
-            onClick={() => router.push("/auth/login")}
-            sx={{
-              backgroundColor: "primary.main",
-              "&:hover": {
-                backgroundColor: "primary.dark",
-              },
-            }}
-          >
-            User
-          </Button>
+          Enter CMS
+        </Button>
+      </Box>
 
-          <Button
-            variant="contained"
-            size="large"
-            startIcon={<TvIcon />}
-            onClick={() => router.push("/cms")}
-            sx={{
-              backgroundColor: "secondary.main",
-              color: "#fff",
-              "&:hover": {
-                backgroundColor: "secondary.dark",
-              },
-            }}
-          >
-            CMS
-          </Button>
-        </Box>
+      {/* Footer */}
+      <Box sx={{ textAlign: "center", mb: 2 }}>
+        <Typography variant="body2" color="grey.400">
+          © {new Date().getFullYear()} WhiteWall Digital Solutions
+        </Typography>
+        <Typography variant="body2" color="grey.500">
+          Contact: <a href="mailto:solutions@whitewall.om" style={{ color: "#90caf9" }}>solutions@whitewall.om</a>
+        </Typography>
       </Box>
     </Box>
   );
