@@ -25,6 +25,10 @@ const Login = () => {
     password: "",
     rememberMe: false,
   });
+  const [errors, setErrors] = useState({
+    email: "",
+    password: "",
+  });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -33,6 +37,39 @@ const Login = () => {
   const { showMessage } = useMessage();
   const { login: handleLogin } = useAuth();
 
+  const validateEmail = (email) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(String(email).toLowerCase());
+  };
+
+  const validatePassword = (password) => {
+    return password.length >= 6;
+  };
+
+  const validateForm = () => {
+    let valid = true;
+    const newErrors = { email: "", password: "" };
+
+    if (!form.email) {
+      newErrors.email = "Email is required";
+      valid = false;
+    } else if (!validateEmail(form.email)) {
+      newErrors.email = "Please enter a valid email address";
+      valid = false;
+    }
+
+    if (!form.password) {
+      newErrors.password = "Password is required";
+      valid = false;
+    } else if (!validatePassword(form.password)) {
+      newErrors.password = "Password must be at least 6 characters";
+      valid = false;
+    }
+
+    setErrors(newErrors);
+    return valid;
+  };
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({
@@ -40,6 +77,10 @@ const Login = () => {
       [name]: type === "checkbox" ? checked : value,
     }));
 
+    // Clear error when user types
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
     setSuccess("");
   };
 
@@ -49,6 +90,9 @@ const Login = () => {
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) {
+      return;
+    }
     setLoading(true);
     setSuccess("");
 
@@ -121,7 +165,7 @@ const Login = () => {
             {success}
           </Alert>
         )}
-        <Box component="form" onSubmit={onSubmit}>
+        <Box component="form" onSubmit={onSubmit} noValidate>
           <TextField
             name="email"
             label="Email"
@@ -131,6 +175,9 @@ const Login = () => {
             margin="normal"
             value={form.email}
             onChange={handleInputChange}
+            error={!!errors.email}
+            helperText={errors.email}
+            required
           />
 
           <TextField
@@ -142,6 +189,9 @@ const Login = () => {
             margin="normal"
             value={form.password}
             onChange={handleInputChange}
+            error={!!errors.password}
+            helperText={errors.password}
+            required
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
@@ -152,7 +202,6 @@ const Login = () => {
               ),
             }}
           />
-
           {/* ✅ Remember Me Checkbox */}
           <FormControlLabel
             control={
