@@ -26,6 +26,12 @@ const Register = () => {
     password: "",
     confirmPassword: "",
   });
+  const [errors, setErrors] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -34,9 +40,81 @@ const Register = () => {
   const { showMessage } = useMessage();
   const { register: handleRegister } = useAuth(); // Will add to AuthContext
 
+  // Email validation regex pattern
+  const validateEmail = (email) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(String(email).toLowerCase());
+  };
+
+  // Password validation - at least 8 chars with 1 number and 1 special char
+  const validatePassword = (password) => {
+    const hasNumber = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*]/.test(password);
+    return password.length >= 6 && hasNumber && hasSpecialChar;
+  };
+
+  // Validate name - at least 2 characters
+  const validateName = (name) => {
+    return name.trim().length >= 2;
+  };
+
+  // Main form validation function
+  const validateForm = () => {
+    let isValid = true;
+    const newErrors = {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    };
+
+    // Name validation
+    if (!form.name.trim()) {
+      newErrors.name = "Name is required";
+      isValid = false;
+    } else if (!validateName(form.name)) {
+      newErrors.name = "Name must be at least 2 characters";
+      isValid = false;
+    }
+
+    // Email validation
+    if (!form.email) {
+      newErrors.email = "Email is required";
+      isValid = false;
+    } else if (!validateEmail(form.email)) {
+      newErrors.email = "Please enter a valid email";
+      isValid = false;
+    }
+
+    // Password validation
+    if (!form.password) {
+      newErrors.password = "Password is required";
+      isValid = false;
+    } else if (!validatePassword(form.password)) {
+      newErrors.password =
+        "Password must be at least 6 characters, numeric and a special character";
+      isValid = false;
+    }
+
+    // Confirm password validation
+    if (!form.confirmPassword) {
+      newErrors.confirmPassword = "Please confirm your password";
+      isValid = false;
+    } else if (form.password !== form.confirmPassword) {
+      newErrors.confirmPassword = "Passwords don't match";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    // Clear error when user types in a field
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
     setSuccess("");
   };
 
@@ -47,6 +125,10 @@ const Register = () => {
   const onSubmit = async (e) => {
     e.preventDefault();
 
+    // Validate form before submission
+    if (!validateForm()) {
+      return;
+    }
     if (form.password !== form.confirmPassword) {
       showMessage("Passwords don't match");
       return;
@@ -57,7 +139,7 @@ const Register = () => {
 
     try {
       await handleRegister(form.name, form.email, form.password);
-      setSuccess("Login successful!");
+      setSuccess("Registration successful!");
       router.push("/auth/login");
     } catch (err) {
       // For Joi validation errors (400 status)
@@ -124,6 +206,9 @@ const Register = () => {
             margin="normal"
             value={form.name}
             onChange={handleInputChange}
+            error={!!errors.name}
+            helperText={errors.name}
+            required
           />
 
           <TextField
@@ -134,6 +219,9 @@ const Register = () => {
             margin="normal"
             value={form.email}
             onChange={handleInputChange}
+            error={!!errors.email}
+            helperText={errors.email}
+            required
           />
 
           <TextField
@@ -144,10 +232,13 @@ const Register = () => {
             margin="normal"
             value={form.password}
             onChange={handleInputChange}
+            error={!!errors.password}
+            helperText={errors.password}
+            required
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
-                  <IconButton onClick={togglePasswordVisibility}>
+                  <IconButton onClick={togglePasswordVisibility} edge="end">
                     {showPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
                 </InputAdornment>
@@ -163,10 +254,13 @@ const Register = () => {
             margin="normal"
             value={form.confirmPassword}
             onChange={handleInputChange}
+            error={!!errors.confirmPassword}
+            helperText={errors.confirmPassword}
+            required
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
-                  <IconButton onClick={togglePasswordVisibility}>
+                  <IconButton onClick={togglePasswordVisibility} edge="end">
                     {showPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
                 </InputAdornment>
