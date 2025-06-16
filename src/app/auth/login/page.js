@@ -105,7 +105,7 @@ const Login = () => {
       setSuccess("Login successful!");
 
       if (userData.role === "admin") {
-        router.push("/user");
+        router.push("/cms");
       } else {
         showMessage("Unauthorized role. Contact support.");
       }

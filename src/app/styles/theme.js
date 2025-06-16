@@ -20,11 +20,11 @@ const theme = createTheme({
   typography: {
     fontFamily: "'Poppins', sans-serif",
     h1: {
-      fontSize: "3rem",
+      fontSize: "2.5rem",
       fontWeight: "bold",
     },
     h2: {
-      fontSize: "2.5rem",
+      fontSize: "2.15rem",
       fontWeight: "bold",
     },
     h3: {

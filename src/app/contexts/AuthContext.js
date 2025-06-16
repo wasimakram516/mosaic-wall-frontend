@@ -1,9 +1,11 @@
 "use client";
 
 import React, { createContext, useState, useContext, useEffect } from "react";
-import { login as loginService, logoutUser } from "../../services/authService";
-import { jwtDecode } from "jwt-decode";
-import { register as registerService } from "../../services/authService";
+import {
+  login as loginService,
+  logoutUser,
+  register as registerService,
+} from "../../services/authService";
 
 export const AuthContext = createContext();
 
@@ -11,18 +13,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Function to extract user from access token
-  const extractUserFromToken = (token) => {
-    try {
-      const decoded = jwtDecode(token);
-      return decoded; // ✅ Extracted user info (id, role, email, etc.)
-    } catch (error) {
-      console.error("Invalid access token:", error);
-      return null;
-    }
-  };
-
-  //Register Function
+  // Register Function
   const handleRegister = async (name, email, password) => {
     setLoading(true);
     try {
@@ -41,11 +32,11 @@ export const AuthProvider = ({ children }) => {
         password,
         rememberMe
       );
-      localStorage.setItem("accessToken", accessToken);
 
-      const userData = extractUserFromToken(accessToken);
-      localStorage.setItem("user", JSON.stringify(user)); // Save user data to localStorage (so it can be used in Header or elsewhere)
-      setUser(userData);
+      // Store token & user info
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("user", JSON.stringify(user));
+      setUser(user);
       return user;
     } finally {
       setLoading(false);
@@ -60,12 +51,11 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  // Load user from stored access token on app start
+  // Load user from localStorage on app start
   useEffect(() => {
-    const storedToken = localStorage.getItem("accessToken");
-    if (storedToken) {
-      const userData = extractUserFromToken(storedToken);
-      setUser(userData);
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
     }
     setLoading(false);
   }, []);
