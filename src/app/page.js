@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { Box, Button, Typography } from "@mui/material";
 import Image from "next/image";
 import DashboardIcon from "@mui/icons-material/Dashboard";
-import {Shift} from "ambient-cbg"
+import { Shift } from "ambient-cbg";
 
 export default function Home() {
   const router = useRouter();
@@ -21,11 +21,11 @@ export default function Home() {
         padding: 4,
       }}
     >
-      <Shift/>
+      <Shift />
       {/* Header - WhiteWall Logo */}
       <Box sx={{ mt: 2 }}>
         <Image
-          src="/WWDSwhite.png" 
+          src="/WWDSwhite.png"
           alt="WhiteWall Digital Solutions"
           width={200}
           height={60}
@@ -72,7 +72,10 @@ export default function Home() {
           © {new Date().getFullYear()} WhiteWall Digital Solutions
         </Typography>
         <Typography variant="body2" color="grey.500">
-          Contact: <a href="mailto:solutions@whitewall.om" style={{ color: "#90caf9" }}>solutions@whitewall.om</a>
+          Contact:{" "}
+          <a href="mailto:solutions@whitewall.om" style={{ color: "#90caf9" }}>
+            solutions@whitewall.om
+          </a>
         </Typography>
       </Box>
     </Box>
