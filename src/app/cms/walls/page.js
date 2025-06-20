@@ -7,9 +7,10 @@ import {
   createWallConfig,
   updateWallConfig,
   deleteWallConfig,
+  getWallConfigBySlug,
 } from "@/services/wallConfigService";
 import { format } from "date-fns";
-import QRCodeDisplay from "@/app/components/QRCodeDisplay";
+import BreadcrumbsNav from "@/app/components/BreadcrumbsNav";
 import {
   Box,
   Button,
@@ -39,6 +40,7 @@ import {
   Delete as DeleteIcon,
   QrCode as QrCodeIcon,
 } from "@mui/icons-material";
+import ShareFeedbackModal from "@/app/components/ShareFeedbackModal";
 
 export default function WallConfigsPage() {
   const router = useRouter();
@@ -47,6 +49,7 @@ export default function WallConfigsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [currentSlug, setCurrentSlug] = useState("");
+  const [currentWallConfig, setCurrentWallConfig] = useState(null);
   const [currentConfig, setCurrentConfig] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -126,18 +129,32 @@ export default function WallConfigsPage() {
     }
   };
 
-  const showQRCode = (slug) => {
-    setCurrentSlug(slug);
-    setIsQRModalOpen(true);
+  const showQRCode = async (slug) => {
+    try {
+      setCurrentSlug(slug);
+      // Fetch wall config by slug to get the mode
+      const response = await getWallConfigBySlug(slug);
+      setCurrentWallConfig(response.data);
+      setIsQRModalOpen(true);
+    } catch (error) {
+      console.error("Failed to fetch wall config for QR:", error);
+    }
   };
 
+  // Create URLs based on fetched wall config
   let uploadUrl = "";
-  if (typeof window !== "undefined") {
-    uploadUrl = `${window.location.origin}/upload/${currentSlug}`;
+  let qrCodeUrl = "";
+
+  if (typeof window !== "undefined" && currentWallConfig) {
+    // QR page URL for copying
+    uploadUrl = `${window.location.origin}/${currentSlug}/qr`;
+    // Upload page URL with mode for QR code generation
+    qrCodeUrl = `${window.location.origin}/${currentSlug}/upload?mode=${currentWallConfig.mode}`;
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 6 }}>
+      <BreadcrumbsNav />
       <Box
         sx={{
           display: "flex",
@@ -211,7 +228,7 @@ export default function WallConfigsPage() {
                 <CardActions sx={{ justifyContent: "space-between", p: 2 }}>
                   <IconButton
                     size="small"
-                    onClick={() => showQRCode(config.slug)}
+                    onClick={() => showQRCode(config.slug)} // Only pass slug
                     aria-label="Show QR Code"
                   >
                     <QrCodeIcon />
@@ -296,57 +313,14 @@ export default function WallConfigsPage() {
         </form>
       </Dialog>
 
-      {/* QR Code Modal */}
-      {/* QR Code Modal */}
-      <Dialog open={isQRModalOpen} onClose={() => setIsQRModalOpen(false)}>
-        <DialogTitle>QR Code for {currentSlug}</DialogTitle>
-        <DialogContent>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 2,
-            }}
-          >
-            <Box
-              sx={{
-                p: 2,
-                bgcolor: "background.paper",
-                borderRadius: 1,
-                minWidth: 300,
-                minHeight: 300,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <QRCodeDisplay value={uploadUrl} />
-            </Box>
-            <Typography variant="body2" sx={{ wordBreak: "break-all" }}>
-              {uploadUrl}
-            </Typography>
-            <Button
-              variant="contained"
-              fullWidth
-              onClick={() => {
-                const canvas = document.querySelector("canvas");
-                if (canvas) {
-                  const link = document.createElement("a");
-                  link.download = `wall-config-${currentSlug}.png`;
-                  link.href = canvas.toDataURL("image/png");
-                  link.click();
-                }
-              }}
-            >
-              Download QR Code
-            </Button>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setIsQRModalOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
+      {/* QR Code Modal using ShareFeedbackModal */}
+      <ShareFeedbackModal
+        open={isQRModalOpen}
+        onClose={() => setIsQRModalOpen(false)}
+        slugName={currentSlug}
+        shareableLink={uploadUrl} // QR page URL for copying
+        qrCodeUrl={qrCodeUrl} // Upload page URL with mode for QR code generation
+      />
     </Container>
   );
 }

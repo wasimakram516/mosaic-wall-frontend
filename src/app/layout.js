@@ -3,6 +3,7 @@ import "./styles/globals.css";
 import ThemeRegistry from "@/app/styles/themeRegistry";
 import { MessageProvider } from "@/app/contexts/MessageContext";
 import { AuthProvider } from "@/app/contexts/AuthContext";
+import ClientLayout from "@/app/ClientLayout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,8 +18,10 @@ const geistMono = Geist_Mono({
 // Metadata for SEO
 export const metadata = {
   title: "Mosaic Wall | WhiteWall Digital Solutions",
-  description: "Real-time media display system powered by WhiteWall Digital Solutions.",
-  keywords: "mosaic wall, digital wall, real-time display, whitewall, whitewall digital solutions, media grid, public uploads",
+  description:
+    "Real-time media display system powered by WhiteWall Digital Solutions.",
+  keywords:
+    "mosaic wall, digital wall, real-time display, whitewall, whitewall digital solutions, media grid, public uploads",
   author: "WhiteWall Digital Solutions",
 };
 
@@ -41,7 +44,9 @@ export default function RootLayout({ children }) {
       <body>
         <ThemeRegistry>
           <AuthProvider>
-            <MessageProvider>{children}</MessageProvider>
+            <MessageProvider>
+              <ClientLayout>{children}</ClientLayout>
+            </MessageProvider>
           </AuthProvider>
         </ThemeRegistry>
       </body>

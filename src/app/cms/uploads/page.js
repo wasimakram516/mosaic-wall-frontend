@@ -55,6 +55,7 @@ import {
   Download,
 } from "@mui/icons-material";
 import { getDisplayMedia } from "@/services/displayMediaService";
+import BreadcrumbsNav from "@/app/components/BreadcrumbsNav";
 
 const CMSUploadsPage = () => {
   const [media, setMedia] = useState([]);
@@ -433,7 +434,8 @@ const CMSUploadsPage = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 6 }}>
+      <BreadcrumbsNav />
       {/* Header */}
       <Box mb={4}>
         <Box
@@ -452,7 +454,6 @@ const CMSUploadsPage = () => {
           </Box>
         </Box>
       </Box>
-
       {/* Filters */}
       <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
         <Stack
@@ -546,7 +547,6 @@ const CMSUploadsPage = () => {
           )}
         </Stack>
       </Paper>
-
       {/* Results Count */}
       <Box mb={3}>
         <Typography
@@ -559,7 +559,6 @@ const CMSUploadsPage = () => {
           Showing {filteredMedia.length} of {media.length} media items
         </Typography>
       </Box>
-
       {/* Media Display */}
       {filteredMedia.length === 0 ? (
         <Paper elevation={1} sx={{ p: 8, textAlign: "center" }}>
@@ -591,7 +590,7 @@ const CMSUploadsPage = () => {
               <Card
                 elevation={2}
                 sx={{
-                  height: "100%",
+                  height: "95%",
                   display: "flex",
                   flexDirection: "column",
                   transition: "all 0.3s ease-in-out",
@@ -740,10 +739,8 @@ const CMSUploadsPage = () => {
           ))}
         </ImageList>
       )}
-
       {/* Modal and Preview Components */}
       <MediaModal open={modalOpen} media={selectedMedia} onClose={closeModal} />
-
       <FullScreenPreview
         open={previewOpen}
         media={selectedMedia}
