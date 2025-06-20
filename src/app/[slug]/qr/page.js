@@ -77,12 +77,6 @@ export default function PublicQrPage() {
             style={{ width: "100%", height: "auto", objectFit: "contain" }}
           />
         </Box>
-
-        <Divider
-          orientation="vertical"
-          flexItem
-          sx={{ bgcolor: "grey.400", height: 30, mx: 2 }}
-        />
       </Box>
 
       {/* ✅ Heading */}

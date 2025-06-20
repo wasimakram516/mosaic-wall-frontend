@@ -33,7 +33,7 @@ export const uploadPhoto = async (
 ) => {
   try {
     const formData = new FormData();
-    formData.append("image", photoBlob, "photo.jpg"); // Note: using "image" to match your multer field name
+    formData.append("image", photoBlob, "photo.jpg"); 
     formData.append("text", text);
     formData.append("mode", mode);
 

@@ -23,48 +23,37 @@ import {
   Divider,
   Avatar,
   Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Fade,
-  Backdrop,
-  ToggleButton,
-  ToggleButtonGroup,
-  ImageList,
-  ImageListItem,
-  ImageListItemBar,
   Tooltip,
   Zoom,
-  Alert,
-  Snackbar,
-  CircularProgress,
 } from "@mui/material";
 import {
   Search,
   Visibility,
   Clear,
-  FilterList,
   Image as ImageIcon,
   AccessTime,
   PhotoLibrary,
   Close,
-  ViewModule,
-  ViewList,
-  Fullscreen,
-  ContentCopy,
-  Download,
+  Delete,
 } from "@mui/icons-material";
-import { getDisplayMedia } from "@/services/displayMediaService";
+import {
+  getDisplayMedia,
+  deleteDisplayMedia,
+} from "@/services/displayMediaService";
+
 import BreadcrumbsNav from "@/app/components/BreadcrumbsNav";
+import ConfirmationDialog from "@/app/components/ConfirmationDialog";
+import { formatDate } from "@/utils/dateUtils";
 
 const CMSUploadsPage = () => {
   const [media, setMedia] = useState([]);
   const [filteredMedia, setFilteredMedia] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState("card");
   const [selectedMedia, setSelectedMedia] = useState(null);
-  const [modalOpen, setModalOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [mediaToDelete, setMediaToDelete] = useState(null);
+
   const [filters, setFilters] = useState({
     wall: "",
     mode: "",
@@ -128,17 +117,6 @@ const CMSUploadsPage = () => {
     setFilters({ wall: "", mode: "", search: "" });
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString("en-US", {
-      timeZone: "UTC",
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   const getUniqueWalls = () => {
     const walls = media.map((item) => item.wall);
     return walls.filter(
@@ -146,43 +124,26 @@ const CMSUploadsPage = () => {
     );
   };
 
-  const handleView = (item) => {
-    setSelectedMedia(item);
-    setModalOpen(true);
-  };
-
   const handlePreview = (item) => {
     setSelectedMedia(item);
     setPreviewOpen(true);
   };
 
-  const handleCopyUrl = (url) => {
-    navigator.clipboard.writeText(url);
+  const handleDeleteClick = (item) => {
+    setMediaToDelete(item);
+    setDeleteDialogOpen(true);
   };
 
-  const handleDownload = async (imageUrl, fileName) => {
+  const confirmDelete = async () => {
+    if (!mediaToDelete) return;
     try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = fileName || `media-${Date.now()}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      }, 100);
-    } catch (error) {
-      console.error("Download failed:", error);
-      window.open(imageUrl, "_blank");
+      await deleteDisplayMedia(mediaToDelete._id);
+      setDeleteDialogOpen(false);
+      setMediaToDelete(null);
+      fetchMedia(false);
+    } catch (err) {
+      console.error("Delete failed:", err);
     }
-  };
-
-  const closeModal = () => {
-    setModalOpen(false);
-    setSelectedMedia(null);
   };
 
   const closePreview = () => {
@@ -190,159 +151,24 @@ const CMSUploadsPage = () => {
     setSelectedMedia(null);
   };
 
-  // Modal Component
-  const MediaModal = ({ open, media, onClose }) => (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-      TransitionComponent={Fade}
-      BackdropComponent={Backdrop}
-      BackdropProps={{
-        timeout: 500,
-      }}
-    >
-      {media && (
-        <>
-          <DialogTitle sx={{ pb: 1 }}>
-            <Box
-              display="flex"
-              alignItems="center"
-              justifyContent="space-between"
-            >
-              <Typography variant="h6" component="div">
-                {media.wall.name}
-              </Typography>
-              <Box display="flex" alignItems="center" gap={1}>
-                <Chip
-                  label={media.wall.mode.toUpperCase()}
-                  size="small"
-                  color={media.wall.mode === "card" ? "primary" : "secondary"}
-                />
-                <IconButton onClick={onClose} size="small">
-                  <Close />
-                </IconButton>
-              </Box>
-            </Box>
-          </DialogTitle>
-
-          <DialogContent dividers>
-            <Box display="flex" flexDirection="column" gap={3}>
-              <Box position="relative">
-                <img
-                  src={media.imageUrl}
-                  alt="Media preview"
-                  style={{
-                    width: "100%",
-                    height: "auto",
-                    maxHeight: "400px",
-                    objectFit: "contain",
-                    borderRadius: "8px",
-                  }}
-                />
-                <IconButton
-                  sx={{
-                    position: "absolute",
-                    top: 8,
-                    right: 8,
-                    bgcolor: "rgba(0,0,0,0.6)",
-                    color: "white",
-                    "&:hover": { bgcolor: "rgba(0,0,0,0.8)" },
-                  }}
-                  onClick={() => handlePreview(media)}
-                >
-                  <Fullscreen />
-                </IconButton>
-              </Box>
-
-              {media.wall.mode === "card" && media.text && (
-                <Box>
-                  <Typography
-                    variant="subtitle2"
-                    color="text.secondary"
-                    gutterBottom
-                  >
-                    Text Content
-                  </Typography>
-                  <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
-                    {media.text}
-                  </Typography>
-                </Box>
-              )}
-
-              <Box>
-                <Typography
-                  variant="subtitle2"
-                  color="text.secondary"
-                  gutterBottom
-                >
-                  Details
-                </Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={6}>
-                    <Typography variant="body2">
-                      <strong>Created:</strong> {formatDate(media.createdAt)}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2">
-                      <strong>Wall Mode:</strong> {media.wall.mode}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Typography variant="body2" sx={{ wordBreak: "break-all" }}>
-                      <strong>Image URL:</strong> {media.imageUrl}
-                    </Typography>
-                  </Grid>
-                </Grid>
-              </Box>
-            </Box>
-          </DialogContent>
-
-          <DialogActions sx={{ p: 2 }}>
-            <Button
-              startIcon={<ContentCopy />}
-              onClick={() => handleCopyUrl(media.imageUrl)}
-              size="small"
-            >
-              Copy URL
-            </Button>
-            <Button
-              startIcon={<Download />}
-              onClick={() =>
-                handleDownload(media.imageUrl, `media-${media._id}`)
-              }
-              size="small"
-            >
-              Download
-            </Button>
-          </DialogActions>
-        </>
-      )}
-    </Dialog>
-  );
-
-  // Full Screen Preview Component
   const FullScreenPreview = ({ open, media, onClose }) => (
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth={false}
       fullScreen
       TransitionComponent={Zoom}
       sx={{
         "& .MuiDialog-paper": {
-          bgcolor: "rgba(0,0,0,0.9)",
+          backgroundColor: "#000", // clean black background
         },
       }}
     >
       {media && (
         <Box
+          position="relative"
           display="flex"
           flexDirection="column"
           height="100vh"
-          position="relative"
         >
           <IconButton
             onClick={onClose}
@@ -350,52 +176,92 @@ const CMSUploadsPage = () => {
               position: "absolute",
               top: 16,
               right: 16,
+              zIndex: 10,
               color: "white",
-              bgcolor: "rgba(0,0,0,0.6)",
-              zIndex: 1,
-              "&:hover": { bgcolor: "rgba(0,0,0,0.8)" },
+              backgroundColor: "rgba(0,0,0,0.5)",
+              backdropFilter: "blur(6px)",
+              "&:hover": { backgroundColor: "rgba(0,0,0,0.8)" },
             }}
           >
             <Close />
           </IconButton>
 
+          {/* Image Display */}
           <Box
+            flex={1}
             display="flex"
             alignItems="center"
             justifyContent="center"
-            flex={1}
-            p={2}
+            px={2}
+            py={4}
           >
-            <img
-              src={media.imageUrl}
-              alt="Full screen preview"
-              style={{
+            <Box
+              sx={{
                 maxWidth: "100%",
                 maxHeight: "100%",
-                objectFit: "contain",
+                borderRadius: 2,
+                overflow: "hidden",
+                boxShadow: 5,
               }}
-            />
+            >
+              <img
+                src={media.imageUrl}
+                alt="Full screen preview"
+                style={{
+                  display: "block",
+                  width: "100%",
+                  height: "auto",
+                  objectFit: "contain",
+                }}
+              />
+            </Box>
           </Box>
 
-          <Paper
+          {/* Caption Section */}
+          <Box
             sx={{
               position: "absolute",
-              bottom: 16,
-              left: 16,
-              right: 16,
-              p: 2,
-              bgcolor: "rgba(255,255,255,0.95)",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              px: 4,
+              py: 3,
+              background:
+                "linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.6), transparent)",
+              color: "white",
             }}
           >
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="subtitle2" color="grey.400" gutterBottom>
+              Uploaded via{" "}
+              {media.wall.mode === "card" ? "Card Wall" : "Mosaic Wall"}
+            </Typography>
+
+            <Typography
+              variant="h5"
+              fontWeight="bold"
+              gutterBottom
+              sx={{ textTransform: "capitalize" }}
+            >
               {media.wall.name}
             </Typography>
+
             {media.wall.mode === "card" && media.text && (
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body1"
+                color="grey.200"
+                sx={{
+                  mt: 1,
+                  whiteSpace: "pre-wrap",
+                  maxWidth: "250px",
+                }}
+              >
                 {media.text}
               </Typography>
             )}
-          </Paper>
+            <Typography variant="caption" color="grey.500" mt={1}>
+              {formatDate(media.createdAt)}
+            </Typography>
+          </Box>
         </Box>
       )}
     </Dialog>
@@ -403,22 +269,39 @@ const CMSUploadsPage = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Container maxWidth={false} sx={{ py: 4, px: { xs: 2, sm: 4, md: 8 } }}>
+        {/* Title Skeletons */}
         <Box mb={4}>
-          <Skeleton variant="text" width={300} height={60} />
-          <Skeleton variant="text" width={500} height={30} />
+          <Skeleton variant="text" sx={{ width: "30%", height: 50 }} />
+          <Skeleton variant="text" sx={{ width: "50%", height: 25 }} />
         </Box>
-        <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
-          <Stack direction="row" spacing={2} flexWrap="wrap">
-            <Skeleton variant="rectangular" width={300} height={56} />
-            <Skeleton variant="rectangular" width={200} height={56} />
-            <Skeleton variant="rectangular" width={150} height={56} />
+  
+        {/* Filters Skeleton */}
+        <Paper elevation={1} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={2}
+            flexWrap="wrap"
+            alignItems={{ xs: "stretch", sm: "center" }}
+          >
+            <Skeleton variant="rectangular" sx={{ width: { xs: "100%", sm: 300 }, height: 56 }} />
+            <Skeleton variant="rectangular" sx={{ width: { xs: "100%", sm: 200 }, height: 56 }} />
+            <Skeleton variant="rectangular" sx={{ width: { xs: "100%", sm: 150 }, height: 56 }} />
           </Stack>
         </Paper>
+  
+        {/* Grid Skeleton */}
         <Grid container spacing={3}>
           {Array.from({ length: 6 }).map((_, i) => (
             <Grid item xs={12} sm={6} md={4} key={i}>
-              <Card>
+              <Card
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
                 <Skeleton variant="rectangular" height={200} />
                 <CardContent>
                   <Skeleton variant="text" height={30} />
@@ -432,121 +315,134 @@ const CMSUploadsPage = () => {
       </Container>
     );
   }
-
+  
   return (
     <Container maxWidth="lg" sx={{ mt: 6 }}>
       <BreadcrumbsNav />
-      {/* Header */}
-      <Box mb={4}>
-        <Box
-          display="flex"
-          alignItems="center"
-          justifyContent="space-between"
-          mb={2}
-        >
-          <Box>
-            <Typography variant="h3" color="text.primary" gutterBottom>
-              Media Gallery
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              View all uploaded media across display walls
-            </Typography>
-          </Box>
+
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        justifyContent="space-between"
+        alignItems={{ xs: "flex-start", sm: "center" }}
+        spacing={2}
+        mb={2}
+      >
+        <Box>
+          <Typography variant="h4" fontWeight="bold">
+            Media Gallery
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mt={0.5}>
+            View and manage all submitted media from your display walls.
+          </Typography>
         </Box>
-      </Box>
-      {/* Filters */}
-      <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+      </Stack>
+
+      <Divider sx={{ mb: 4 }} />
+
+      <Paper
+        elevation={1}
+        sx={{
+          p: { xs: 2, sm: 3 },
+          mb: 4,
+          borderRadius: 2,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+        }}
+      >
+        <Box mb={2}>
+          <Typography variant="subtitle1" fontWeight="bold">
+            Filter Your Media
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Use the search and dropdowns below to find media by wall, mode, or
+            keywords.
+          </Typography>
+        </Box>
         <Stack
-          direction="row"
+          direction={{ xs: "column", sm: "row" }}
           spacing={2}
-          alignItems="center"
+          alignItems={{ xs: "stretch", sm: "center" }}
+          justifyContent="space-between"
           flexWrap="wrap"
           useFlexGap
         >
-          {/* Search */}
+          {/* Search on the left */}
           <TextField
-            placeholder="Search by text or wall name..."
             variant="outlined"
             size="small"
-            sx={{ minWidth: 300, flexGrow: 1 }}
+            placeholder="Search by wall name or text..."
             value={filters.search}
             onChange={(e) => handleFilterChange("search", e.target.value)}
+            sx={{ width: { xs: "100%", sm: 300 } }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <Search />
+                  <Search fontSize="small" />
                 </InputAdornment>
               ),
             }}
           />
 
-          {/* Wall Filter */}
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>Wall</InputLabel>
-            <Select
-              value={filters.wall}
-              label="Wall"
-              onChange={(e) => handleFilterChange("wall", e.target.value)}
-            >
-              <MenuItem value="">
-                <em>All Walls</em>
-              </MenuItem>
-              {getUniqueWalls().map((wall) => (
-                <MenuItem key={wall._id} value={wall._id}>
-                  {wall.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {/* Mode Filter */}
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Mode</InputLabel>
-            <Select
-              value={filters.mode}
-              label="Mode"
-              onChange={(e) => handleFilterChange("mode", e.target.value)}
-            >
-              <MenuItem value="">
-                <em>All Modes</em>
-              </MenuItem>
-              <MenuItem value="card">Card</MenuItem>
-              <MenuItem value="mosaic">Mosaic</MenuItem>
-            </Select>
-          </FormControl>
-
-          {/* View Mode Toggle */}
-          <ToggleButtonGroup
-            value={viewMode}
-            exclusive
-            onChange={(e, newMode) => newMode && setViewMode(newMode)}
-            size="small"
+          {/* Filters on the right */}
+          <Stack
+            direction="row"
+            spacing={2}
+            alignItems="center"
+            justifyContent="flex-end"
+            flexWrap="wrap"
+            useFlexGap
           >
-            <ToggleButton value="card" aria-label="card view">
-              <Tooltip title="Card View">
-                <ViewList />
-              </Tooltip>
-            </ToggleButton>
-            <ToggleButton value="grid" aria-label="grid view">
-              <Tooltip title="Grid View">
-                <ViewModule />
-              </Tooltip>
-            </ToggleButton>
-          </ToggleButtonGroup>
+            {/* Wall Selector */}
+            <FormControl size="small" sx={{ width: { xs: "100%", sm: 160 } }}>
+              <InputLabel>Wall</InputLabel>
+              <Select
+                value={filters.wall}
+                label="Wall"
+                onChange={(e) => handleFilterChange("wall", e.target.value)}
+              >
+                <MenuItem value="">
+                  <em>All Walls</em>
+                </MenuItem>
+                {getUniqueWalls().map((wall) => (
+                  <MenuItem key={wall._id} value={wall._id}>
+                    {wall.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-          {/* Clear Filters */}
-          {(filters.wall || filters.mode || filters.search) && (
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<Clear />}
-              onClick={clearFilters}
-            >
-              Clear Filters
-            </Button>
-          )}
+            {/* Mode Selector */}
+            <FormControl size="small" sx={{ width: { xs: "100%", sm: 160 } }}>
+              <InputLabel>Mode</InputLabel>
+              <Select
+                value={filters.mode}
+                label="Mode"
+                onChange={(e) => handleFilterChange("mode", e.target.value)}
+              >
+                <MenuItem value="">
+                  <em>All Modes</em>
+                </MenuItem>
+                <MenuItem value="card">Card</MenuItem>
+                <MenuItem value="mosaic">Mosaic</MenuItem>
+              </Select>
+            </FormControl>
+
+            {/* Clear Button */}
+            {(filters.wall || filters.mode || filters.search) && (
+              <Button
+                variant="outlined"
+                color="error"
+                size="small"
+                startIcon={<Clear />}
+                onClick={clearFilters}
+                sx={{ whiteSpace: "nowrap", height: 40 }}
+              >
+                Clear Filters
+              </Button>
+            )}
+          </Stack>
         </Stack>
       </Paper>
+
       {/* Results Count */}
       <Box mb={3}>
         <Typography
@@ -559,6 +455,7 @@ const CMSUploadsPage = () => {
           Showing {filteredMedia.length} of {media.length} media items
         </Typography>
       </Box>
+
       {/* Media Display */}
       {filteredMedia.length === 0 ? (
         <Paper elevation={1} sx={{ p: 8, textAlign: "center" }}>
@@ -582,169 +479,134 @@ const CMSUploadsPage = () => {
               : "No media available to display."}
           </Typography>
         </Paper>
-      ) : viewMode === "card" ? (
-        // Card View
+      ) : (
         <Grid container spacing={3}>
           {filteredMedia.map((item) => (
-            <Grid item xs={12} sm={6} md={4} key={item._id}>
-              <Card
-                elevation={2}
-                sx={{
-                  height: "95%",
-                  display: "flex",
-                  flexDirection: "column",
-                  transition: "all 0.3s ease-in-out",
-                  "&:hover": {
-                    elevation: 8,
-                    transform: "translateY(-2px)",
-                  },
-                }}
-              >
+            <Grid item xs={12} sm={6} md={4} key={item._id} sx={{ display: "flex" }}>
+            <Card
+              elevation={2}
+              sx={{
+                width: "300px",
+                mx: "auto",
+                display: "flex",
+                flexDirection: "column",
+                position: "relative",
+                transition: "0.3s ease",
+                "&:hover": { transform: "translateY(-2px)" },
+              }}
+            >
                 <CardMedia
                   component="img"
                   height="200"
                   image={item.imageUrl}
-                  alt="Media preview"
-                  sx={{
-                    objectFit: "cover",
-                    cursor: "pointer",
-                  }}
+                  alt="Media"
+                  sx={{ objectFit: "cover", cursor: "pointer" }}
                   onClick={() => handlePreview(item)}
                 />
-                <CardContent sx={{ flexGrow: 1, pb: 1 }}>
-                  {/* Wall Info */}
-                  <Box
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="space-between"
-                    mb={2}
-                  >
-                    <Typography
-                      variant="h6"
-                      color="text.primary"
-                      noWrap
-                      sx={{ flexGrow: 1, mr: 1 }}
-                    >
-                      {item.wall.name}
-                    </Typography>
-                    <Chip
-                      label={item.wall.mode.toUpperCase()}
-                      size="small"
-                      color={
-                        item.wall.mode === "card" ? "primary" : "secondary"
-                      }
-                      variant="outlined"
-                    />
-                  </Box>
 
-                  {/* Text Content (for card mode) */}
+                {/* Top-right mode chip */}
+                <Chip
+                  label={item.wall.mode.toUpperCase()}
+                  size="small"
+                  color={item.wall.mode === "card" ? "primary" : "secondary"}
+                  sx={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                    zIndex: 2,
+                    fontWeight: "bold",
+                  }}
+                />
+
+                <CardContent
+                  sx={{
+                    flexGrow: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    p: 2,
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    fontWeight="bold"
+                    sx={{ wordBreak: "break-word", mb: 1 }}
+                  >
+                    {item.wall.name}
+                  </Typography>
+
                   {item.wall.mode === "card" && (
-                    <Box mb={2}>
-                      {item.text ? (
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{
-                            display: "-webkit-box",
-                            WebkitLineClamp: 3,
-                            WebkitBoxOrient: "vertical",
-                            overflow: "hidden",
-                            lineHeight: 1.4,
-                            minHeight: "4.2em",
-                          }}
-                        >
-                          {item.text}
-                        </Typography>
-                      ) : (
-                        <Typography
-                          variant="body2"
-                          color="text.disabled"
-                          fontStyle="italic"
-                        >
-                          No text content
-                        </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        mb: 2,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {item.text || (
+                        <em style={{ color: "#888" }}>No message provided</em>
                       )}
-                    </Box>
+                    </Typography>
                   )}
 
-                  {/* Timestamp */}
-                  <Box display="flex" alignItems="center" gap={0.5} mb={2}>
-                    <AccessTime fontSize="small" color="action" />
-                    <Typography variant="caption" color="text.secondary">
-                      {formatDate(item.createdAt)}
-                    </Typography>
-                  </Box>
+                  <Box flexGrow={1} />
 
-                  <Divider sx={{ mb: 2 }} />
+                  <Box>
+                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                      <AccessTime fontSize="small" color="action" />
+                      <Typography variant="caption" color="text.secondary">
+                        {formatDate(item.createdAt)}
+                      </Typography>
+                    </Box>
 
-                  {/* Actions */}
-                  <Box display="flex" justifyContent="center">
-                    <IconButton
-                      size="small"
-                      color="primary"
-                      onClick={() => handleView(item)}
-                      aria-label="View media details"
-                    >
-                      <Visibility fontSize="small" />
-                    </IconButton>
+                    <Divider sx={{ mb: 1 }} />
+
+                    <Box display="flex" justifyContent="center" gap={1}>
+                      <Tooltip title="View Details">
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => handlePreview(item)}
+                        >
+                          <Visibility fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+
+                      <Tooltip title="Delete">
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleDeleteClick(item)}
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   </Box>
                 </CardContent>
               </Card>
             </Grid>
           ))}
         </Grid>
-      ) : (
-        // Grid View
-        <ImageList variant="masonry" cols={4} gap={16}>
-          {filteredMedia.map((item) => (
-            <ImageListItem key={item._id}>
-              <img
-                src={item.imageUrl}
-                alt="Media preview"
-                loading="lazy"
-                style={{
-                  cursor: "pointer",
-                  borderRadius: "8px",
-                  transition: "transform 0.2s",
-                }}
-                onClick={() => handlePreview(item)}
-                onMouseEnter={(e) => {
-                  e.target.style.transform = "scale(1.02)";
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.transform = "scale(1)";
-                }}
-              />
-              <ImageListItemBar
-                title={item.wall.name}
-                subtitle={formatDate(item.createdAt)}
-                actionIcon={
-                  <IconButton
-                    size="small"
-                    color="inherit"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleView(item);
-                    }}
-                  >
-                    <Visibility fontSize="small" />
-                  </IconButton>
-                }
-                sx={{
-                  background:
-                    "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 70%, rgba(0,0,0,0) 100%)",
-                }}
-              />
-            </ImageListItem>
-          ))}
-        </ImageList>
       )}
-      {/* Modal and Preview Components */}
-      <MediaModal open={modalOpen} media={selectedMedia} onClose={closeModal} />
+
       <FullScreenPreview
         open={previewOpen}
         media={selectedMedia}
         onClose={closePreview}
+      />
+
+      <ConfirmationDialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Media?"
+        message="Are you sure you want to permanently delete this media item? This action cannot be undone."
+        confirmButtonText="Delete"
       />
     </Container>
   );

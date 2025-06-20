@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import {
   getWallConfigs,
   createWallConfig,
@@ -9,7 +8,6 @@ import {
   deleteWallConfig,
   getWallConfigBySlug,
 } from "@/services/wallConfigService";
-import { format } from "date-fns";
 import BreadcrumbsNav from "@/app/components/BreadcrumbsNav";
 import {
   Box,
@@ -25,7 +23,6 @@ import {
   Select,
   TextField,
   Typography,
-  Paper,
   IconButton,
   Grid,
   Card,
@@ -33,6 +30,8 @@ import {
   CardActions,
   Chip,
   Divider,
+  Stack,
+  Tooltip,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -41,9 +40,10 @@ import {
   QrCode as QrCodeIcon,
 } from "@mui/icons-material";
 import ShareFeedbackModal from "@/app/components/ShareFeedbackModal";
+import ConfirmationDialog from "@/app/components/ConfirmationDialog";
+import { formatDate } from "@/utils/dateUtils";
 
 export default function WallConfigsPage() {
-  const router = useRouter();
   const [wallConfigs, setWallConfigs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -51,6 +51,8 @@ export default function WallConfigsPage() {
   const [currentSlug, setCurrentSlug] = useState("");
   const [currentWallConfig, setCurrentWallConfig] = useState(null);
   const [currentConfig, setCurrentConfig] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [wallToDelete, setWallToDelete] = useState(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -66,7 +68,6 @@ export default function WallConfigsPage() {
     try {
       setIsLoading(true);
       const response = await getWallConfigs();
-      console.log("Fetched wall configs:", response);
       setWallConfigs(response.data);
     } catch (error) {
       console.error("Failed to fetch wall configs:", error);
@@ -98,7 +99,6 @@ export default function WallConfigsPage() {
     e.preventDefault();
     try {
       if (currentConfig) {
-        console.log(formData);
         await updateWallConfig(currentConfig._id, formData);
       } else {
         await createWallConfig(formData);
@@ -120,9 +120,12 @@ export default function WallConfigsPage() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
+  const confirmDelete = async () => {
+    if (!wallToDelete) return;
     try {
-      await deleteWallConfig(id);
+      await deleteWallConfig(wallToDelete._id);
+      setDeleteDialogOpen(false);
+      setWallToDelete(null);
       fetchWallConfigs();
     } catch (error) {
       console.error("Failed to delete wall config:", error);
@@ -132,7 +135,6 @@ export default function WallConfigsPage() {
   const showQRCode = async (slug) => {
     try {
       setCurrentSlug(slug);
-      // Fetch wall config by slug to get the mode
       const response = await getWallConfigBySlug(slug);
       setCurrentWallConfig(response.data);
       setIsQRModalOpen(true);
@@ -141,31 +143,35 @@ export default function WallConfigsPage() {
     }
   };
 
-  // Create URLs based on fetched wall config
   let uploadUrl = "";
   let qrCodeUrl = "";
 
   if (typeof window !== "undefined" && currentWallConfig) {
-    // QR page URL for copying
     uploadUrl = `${window.location.origin}/${currentSlug}/qr`;
-    // Upload page URL with mode for QR code generation
-    qrCodeUrl = `${window.location.origin}/${currentSlug}/upload?mode=${currentWallConfig.mode}`;
+    qrCodeUrl = `${window.location.origin}/${currentSlug}/upload`;
   }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 6 }}>
       <BreadcrumbsNav />
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 4,
-        }}
+
+      {/* Header Section */}
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        justifyContent="space-between"
+        alignItems={{ xs: "stretch", sm: "center" }}
+        spacing={2}
+        mb={2}
       >
-        <Typography variant="h4" component="h1">
-          Wall Configurations
-        </Typography>
+        <Box>
+          <Typography variant="h4" fontWeight="bold">
+            Wall Configurations
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mt={0.5}>
+            Manage display walls for photo submissions via QR codes.
+          </Typography>
+        </Box>
+
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -178,11 +184,21 @@ export default function WallConfigsPage() {
             });
             setIsModalOpen(true);
           }}
+          sx={{
+            minWidth: { xs: "100%", sm: "auto" },
+            fontWeight: "bold",
+            fontSize: "1rem",
+            py: 1.5,
+          }}
         >
           New Wall Config
         </Button>
-      </Box>
+      </Stack>
 
+      {/* Divider */}
+      <Divider sx={{ mb: 4 }} />
+
+      {/* Grid of Config Cards */}
       {isLoading ? (
         <Typography>Loading...</Typography>
       ) : (
@@ -190,64 +206,86 @@ export default function WallConfigsPage() {
           {wallConfigs.map((config) => (
             <Grid item xs={12} sm={6} md={4} lg={3} key={config._id}>
               <Card
+                elevation={3}
                 sx={{
+                  position: "relative",
                   height: "100%",
                   display: "flex",
                   flexDirection: "column",
+                  justifyContent: "space-between",
+                  borderRadius: 2,
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+                  transition: "transform 0.2s, box-shadow 0.2s",
                 }}
               >
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography variant="h6" component="h2" gutterBottom>
+                {/* Chip at top-right */}
+                <Chip
+                  label={config.mode}
+                  color={config.mode === "mosaic" ? "primary" : "secondary"}
+                  size="small"
+                  sx={{
+                    position: "absolute",
+                    top: 12,
+                    right: 12,
+                    fontWeight: 500,
+                    fontSize: "0.75rem",
+                    textTransform: "capitalize",
+                    zIndex: 2,
+                  }}
+                />
+
+                <CardContent sx={{ flexGrow: 1, pt: 4 }}>
+                  <Typography variant="h6" fontWeight="bold" gutterBottom>
                     {config.name}
                   </Typography>
+
                   <Typography
                     variant="body2"
                     color="text.secondary"
-                    gutterBottom
+                    sx={{ mb: 2, wordBreak: "break-word" }}
                   >
                     <strong>Slug:</strong> {config.slug}
                   </Typography>
-                  <Box sx={{ mb: 2 }}>
-                    <Chip
-                      label={config.mode}
-                      color={
-                        config.mode === "mosaic"
-                          ? "primary"
-                          : config.mode === "card"
-                          ? "secondary"
-                          : "default"
-                      }
-                      size="small"
-                    />
-                  </Box>
+
                   <Typography variant="caption" color="text.secondary">
-                    Created: {format(new Date(config.createdAt), "PPpp")}
+                    Created: {formatDate(config.createdAt)}
                   </Typography>
                 </CardContent>
+
                 <Divider />
-                <CardActions sx={{ justifyContent: "space-between", p: 2 }}>
-                  <IconButton
-                    size="small"
-                    onClick={() => showQRCode(config.slug)} // Only pass slug
-                    aria-label="Show QR Code"
-                  >
-                    <QrCodeIcon />
-                  </IconButton>
+
+                <CardActions sx={{ justifyContent: "space-between", p: 1.5 }}>
+                  <Tooltip title="Show QR Code">
+                    <IconButton
+                      size="small"
+                      onClick={() => showQRCode(config.slug)}
+                      aria-label="QR Code"
+                    >
+                      <QrCodeIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                   <Box>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleEdit(config)}
-                      aria-label="Edit"
-                    >
-                      <EditIcon color="primary" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDelete(config._id)}
-                      aria-label="Delete"
-                    >
-                      <DeleteIcon color="error" />
-                    </IconButton>
+                    <Tooltip title="Edit">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleEdit(config)}
+                        aria-label="Edit"
+                      >
+                        <EditIcon fontSize="small" color="primary" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete">
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          setWallToDelete(config);
+                          setDeleteDialogOpen(true);
+                        }}
+                        aria-label="Delete"
+                      >
+                        <DeleteIcon fontSize="small" color="error" />
+                      </IconButton>
+                    </Tooltip>
                   </Box>
                 </CardActions>
               </Card>
@@ -256,7 +294,7 @@ export default function WallConfigsPage() {
         </Grid>
       )}
 
-      {/* Wall Config Form Modal */}
+      {/* Create/Edit Modal */}
       <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <DialogTitle>
           {currentConfig ? "Edit Wall Config" : "Create New Wall Config"}
@@ -278,7 +316,6 @@ export default function WallConfigsPage() {
                 onChange={handleInputChange}
                 fullWidth
                 required
-                margin="normal"
               />
               <TextField
                 label="Slug"
@@ -287,9 +324,8 @@ export default function WallConfigsPage() {
                 onChange={handleInputChange}
                 fullWidth
                 required
-                margin="normal"
               />
-              <FormControl fullWidth margin="normal">
+              <FormControl fullWidth>
                 <InputLabel>Mode</InputLabel>
                 <Select
                   name="mode"
@@ -313,13 +349,22 @@ export default function WallConfigsPage() {
         </form>
       </Dialog>
 
-      {/* QR Code Modal using ShareFeedbackModal */}
+      {/* QR Modal */}
       <ShareFeedbackModal
         open={isQRModalOpen}
         onClose={() => setIsQRModalOpen(false)}
         slugName={currentSlug}
-        shareableLink={uploadUrl} // QR page URL for copying
-        qrCodeUrl={qrCodeUrl} // Upload page URL with mode for QR code generation
+        shareableLink={uploadUrl}
+        qrCodeUrl={qrCodeUrl}
+      />
+
+      <ConfirmationDialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Wall Config?"
+        message={`Are you sure you want to permanently delete "${wallToDelete?.name}"? This action cannot be undone.`}
+        confirmButtonText="Delete"
       />
     </Container>
   );

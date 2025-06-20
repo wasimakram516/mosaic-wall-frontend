@@ -68,15 +68,6 @@ export default function Navbar() {
                   }}
                 />
               </Box>
-
-              <Divider
-                orientation="vertical"
-                flexItem
-                sx={{
-                  bgcolor: "grey.400",
-                  height: 30,
-                }}
-              />
             </Stack>
           </Link>
 
