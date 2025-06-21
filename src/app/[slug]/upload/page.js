@@ -22,6 +22,8 @@ import {
 import Image from "next/image";
 import { uploadPhoto } from "@/services/displayMediaService";
 import { getWallConfigBySlug } from "@/services/wallConfigService";
+import EXIF from "exif-js";
+
 export default function UploadPage() {
   const { slug } = useParams();
 
@@ -101,36 +103,58 @@ export default function UploadPage() {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const context = canvas.getContext("2d");
-
-      const isLandscape = window.innerWidth > window.innerHeight;
-
-      if (isLandscape) {
-        // Normal landscape capture
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0);
-      } else {
-        // Portrait mode: rotate canvas
-        canvas.width = video.videoHeight;
-        canvas.height = video.videoWidth;
-        context.save();
-        context.translate(canvas.width / 2, canvas.height / 2);
-        context.rotate((90 * Math.PI) / 180);
-        context.drawImage(video, -video.videoWidth / 2, -video.videoHeight / 2);
-        context.restore();
-      }
-
-      canvas.toBlob(
-        (blob) => {
-          setCapturedImage(blob);
-          stopCamera();
-        },
-        "image/jpeg",
-        0.8
-      );
+  
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0);
+  
+      canvas.toBlob(async (blob) => {
+        const arrayBuffer = await blob.arrayBuffer();
+        const orientation = EXIF.readFromBinaryFile(arrayBuffer)?.Orientation || 1;
+  
+        const rotatedBlob = await rotateBlobBasedOnOrientation(blob, orientation);
+        setCapturedImage(rotatedBlob);
+        stopCamera();
+      }, "image/jpeg", 0.8);
     }
   };
 
+  function rotateBlobBasedOnOrientation(blob, orientation) {
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+  
+        const [width, height] = [img.width, img.height];
+  
+        if (orientation > 4) {
+          canvas.width = height;
+          canvas.height = width;
+        } else {
+          canvas.width = width;
+          canvas.height = height;
+        }
+  
+        switch (orientation) {
+          case 2: ctx.transform(-1, 0, 0, 1, width, 0); break;
+          case 3: ctx.transform(-1, 0, 0, -1, width, height); break;
+          case 4: ctx.transform(1, 0, 0, -1, 0, height); break;
+          case 5: ctx.transform(0, 1, 1, 0, 0, 0); break;
+          case 6: ctx.transform(0, 1, -1, 0, height, 0); break;
+          case 7: ctx.transform(0, -1, -1, 0, height, width); break;
+          case 8: ctx.transform(0, -1, 1, 0, 0, width); break;
+          default: break;
+        }
+  
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob((newBlob) => resolve(newBlob || blob), "image/jpeg", 0.8);
+      };
+  
+      img.src = URL.createObjectURL(blob);
+    });
+  }
+  
   const retakePhoto = () => {
     setCapturedImage(null);
     setText("");

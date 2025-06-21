@@ -18,7 +18,7 @@ function MosaicCell({ item, isNew, version }) {
   return (
     <Box
       sx={{
-        border: "1px solid #ddd",
+        border: "1px solid #222",
         position: "relative",
         overflow: "hidden",
         backgroundColor: "transparent",

@@ -36,6 +36,7 @@ import {
 import {
   Add as AddIcon,
   Edit as EditIcon,
+  Visibility as ViewIcon,
   Delete as DeleteIcon,
   QrCode as QrCodeIcon,
 } from "@mui/icons-material";
@@ -210,7 +211,7 @@ export default function WallConfigsPage() {
                 sx={{
                   position: "relative",
                   height: "100%",
-                  minWidth:"250px",
+                  minWidth: "250px",
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "space-between",
@@ -256,15 +257,28 @@ export default function WallConfigsPage() {
                 <Divider />
 
                 <CardActions sx={{ justifyContent: "space-between", p: 1.5 }}>
-                  <Tooltip title="Show QR Code">
-                    <IconButton
-                      size="small"
-                      onClick={() => showQRCode(config.slug)}
-                      aria-label="QR Code"
-                    >
-                      <QrCodeIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+                  <Box>
+                    <Tooltip title="Show QR Code">
+                      <IconButton
+                        size="small"
+                        onClick={() => showQRCode(config.slug)}
+                        aria-label="QR Code"
+                      >
+                        <QrCodeIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Open Big Screen">
+                      <IconButton
+                        size="small"
+                        onClick={() =>
+                          window.open(`/${config.slug}/big-screen`, "_blank")
+                        }
+                        aria-label="Big Screen"
+                      >
+                        <ViewIcon fontSize="small" color="primary"/>
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
                   <Box>
                     <Tooltip title="Edit">
                       <IconButton
