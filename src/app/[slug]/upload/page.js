@@ -12,7 +12,6 @@ import {
   Alert,
   CircularProgress,
   Chip,
-  Divider,
 } from "@mui/material";
 import {
   CameraAlt as CameraIcon,
@@ -22,7 +21,6 @@ import {
 import Image from "next/image";
 import { uploadPhoto } from "@/services/displayMediaService";
 import { getWallConfigBySlug } from "@/services/wallConfigService";
-import EXIF from "exif-js";
 
 export default function UploadPage() {
   const { slug } = useParams();
