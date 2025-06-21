@@ -1,116 +1,64 @@
+import env from "@/config/env";
 import { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 
-const useMediaSocket = () => {
-  const [socket, setSocket] = useState(null);
+const useMediaSocket = ({ wallSlug, onMediaUpdate }) => {
   const [connected, setConnected] = useState(false);
-  const [newMediaCount, setNewMediaCount] = useState(0);
   const [connectionError, setConnectionError] = useState(null);
   const socketRef = useRef(null);
 
   useEffect(() => {
-    // Initialize socket connection
-    const initSocket = () => {
-      try {
-        // Replace with your actual backend URL
-        const socketUrl = process.env.NEXT_PUBLIC_WEBSOCKET_HOST;
+    if (!wallSlug) return;
 
-        const newSocket = io(socketUrl, {
-          transports: ["websocket", "polling"],
-          timeout: 30000,
-          reconnection: true,
-          reconnectionAttempts: 5,
-          reconnectionDelay: 1000,
-          reconnectionDelayMax: 5000,
-        });
+    const socketUrl = env.server.socket;
+    const socket = io(socketUrl, {
+      transports: ["websocket", "polling"],
+      timeout: 30000,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+    });
 
-        socketRef.current = newSocket;
-        setSocket(newSocket);
+    socketRef.current = socket;
 
-        // Connection event handlers
-        newSocket.on("connect", () => {
-          console.log("✅ Socket connected:", newSocket.id);
-          setConnected(true);
-          setConnectionError(null);
-          setNewMediaCount(0);
-        });
+    socket.on("connect", () => {
+      console.log("✅ Socket connected:", socket.id);
+      setConnected(true);
+      setConnectionError(null);
 
-        newSocket.on("connect_error", (error) => {
-          console.error("❌ Socket connection error:", error);
-          setConnected(false);
-          setConnectionError(error.message);
-        });
+      socket.emit("register", wallSlug);
+    });
 
-        newSocket.on("disconnect", (reason) => {
-          console.log("🔌 Socket disconnected:", reason);
-          setConnected(false);
+    socket.on("connect_error", (err) => {
+      console.error("❌ Socket connection error:", err.message);
+      setConnected(false);
+      setConnectionError(err.message);
+    });
 
-          // Auto-reconnect if server disconnected
-          if (reason === "io server disconnect") {
-            setTimeout(() => {
-              newSocket.connect();
-            }, 1000);
-          }
-        });
+    socket.on("disconnect", (reason) => {
+      console.warn("🔌 Socket disconnected:", reason);
+      setConnected(false);
+    });
 
-        newSocket.on("reconnect", (attemptNumber) => {
-          console.log("🔄 Socket reconnected after", attemptNumber, "attempts");
-          setConnected(true);
-          setConnectionError(null);
-        });
-
-        newSocket.on("reconnect_error", (error) => {
-          console.error("❌ Reconnection failed:", error);
-          setConnectionError("Reconnection failed");
-        });
-
-        // Register as admin client for all media updates
-        newSocket.emit("register", "admin");
-
-        return newSocket;
-      } catch (error) {
-        console.error("❌ Failed to initialize socket:", error);
-        setConnectionError(error.message);
-        return null;
+    socket.on("mediaUpdate", (mediaList) => {
+      console.log("📥 Received mediaUpdate");
+      if (onMediaUpdate) {
+        onMediaUpdate(mediaList);
       }
-    };
+    });
 
-    const newSocket = initSocket();
-
-    // Cleanup on unmount
     return () => {
-      if (newSocket) {
-        console.log("🧹 Cleaning up socket connection");
-        newSocket.disconnect();
+      if (socket) {
+        console.log("🧹 Disconnecting socket:", socket.id);
+        socket.disconnect();
       }
     };
-  }, []);
-
-  // Function to reset new media count
-  const resetNewMediaCount = () => {
-    setNewMediaCount(0);
-  };
-
-  // Function to increment new media count
-  const incrementNewMediaCount = () => {
-    setNewMediaCount((prev) => prev + 1);
-  };
-
-  // Function to manually request media refresh
-  const requestMediaRefresh = () => {
-    if (socket && connected) {
-      socket.emit("requestMediaRefresh");
-    }
-  };
+  }, [wallSlug]);
 
   return {
-    socket,
     connected,
-    newMediaCount,
     connectionError,
-    resetNewMediaCount,
-    incrementNewMediaCount,
-    requestMediaRefresh,
   };
 };
 

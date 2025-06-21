@@ -210,6 +210,7 @@ export default function WallConfigsPage() {
                 sx={{
                   position: "relative",
                   height: "100%",
+                  minWidth:"250px",
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "space-between",

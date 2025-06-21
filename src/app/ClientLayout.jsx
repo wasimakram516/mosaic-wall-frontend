@@ -11,7 +11,8 @@ export default function ClientLayout({ children }) {
   const hideNavbar =
     pathname === "/" ||
     pathname.startsWith(`/${slug}/qr`) ||
-    pathname.startsWith(`/${slug}/upload`);
+    pathname.startsWith(`/${slug}/upload`) ||
+    pathname.startsWith(`/${slug}/big-screen`);
 
   return (
     <>
