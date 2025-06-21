@@ -36,27 +36,6 @@ export default function UploadPage() {
   const [success, setSuccess] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
   const [mode, setMode] = useState(null);
-  const [deviceOrientation, setDeviceOrientation] = useState(0);
-
-  useEffect(() => {
-    const handleOrientationChange = () => {
-      const angle = window.screen.orientation?.angle || 0;
-      setDeviceOrientation(angle);
-    };
-
-    handleOrientationChange();
-    window.screen.orientation?.addEventListener(
-      "change",
-      handleOrientationChange
-    );
-
-    return () => {
-      window.screen.orientation?.removeEventListener(
-        "change",
-        handleOrientationChange
-      );
-    };
-  }, []);
 
   useEffect(() => {
     const loadWallConfigs = async () => {
@@ -315,8 +294,6 @@ export default function UploadPage() {
                 objectFit: "cover",
                 borderRadius: "12px",
                 backgroundColor: "#000",
-                transform: `rotate(${-deviceOrientation}deg)`,
-                transformOrigin: "center center",
               }}
             />
 
