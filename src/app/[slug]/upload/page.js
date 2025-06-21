@@ -22,6 +22,8 @@ import {
 import Image from "next/image";
 import { uploadPhoto } from "@/services/displayMediaService";
 import { getWallConfigBySlug } from "@/services/wallConfigService";
+import EXIF from "exif-js";
+
 export default function UploadPage() {
   const { slug } = useParams();
 
@@ -100,37 +102,43 @@ export default function UploadPage() {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      const context = canvas.getContext("2d");
-
-      const isLandscape = window.innerWidth > window.innerHeight;
-
-      if (isLandscape) {
-        // Normal landscape capture
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0);
+      const ctx = canvas.getContext("2d");
+  
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+  
+      const isPortrait = vh > vw;
+  
+      // 1. Draw normal video frame to temp canvas
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = vw;
+      tempCanvas.height = vh;
+      const tempCtx = tempCanvas.getContext("2d");
+      tempCtx.drawImage(video, 0, 0, vw, vh);
+  
+      // 2. Rotate to portrait if needed (landscape case)
+      if (!isPortrait) {
+        canvas.width = vh; // rotated width
+        canvas.height = vw; // rotated height
+        ctx.save();
+        ctx.translate(vh / 2, vw / 2); // center
+        ctx.rotate(Math.PI / 2); // 90 degrees
+        ctx.drawImage(tempCanvas, -vw / 2, -vh / 2);
+        ctx.restore();
       } else {
-        // Portrait mode: rotate canvas
-        canvas.width = video.videoHeight;
-        canvas.height = video.videoWidth;
-        context.save();
-        context.translate(canvas.width / 2, canvas.height / 2);
-        context.rotate((90 * Math.PI) / 180);
-        context.drawImage(video, -video.videoWidth / 2, -video.videoHeight / 2);
-        context.restore();
+        canvas.width = vw;
+        canvas.height = vh;
+        ctx.drawImage(tempCanvas, 0, 0);
       }
-
-      canvas.toBlob(
-        (blob) => {
-          setCapturedImage(blob);
-          stopCamera();
-        },
-        "image/jpeg",
-        0.8
-      );
+  
+      // 3. Convert to blob
+      canvas.toBlob((blob) => {
+        setCapturedImage(blob);
+        stopCamera();
+      }, "image/jpeg", 0.8);
     }
   };
-
+  
   const retakePhoto = () => {
     setCapturedImage(null);
     setText("");

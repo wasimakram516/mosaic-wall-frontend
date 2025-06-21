@@ -3,12 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import useMediaSocket from "@/hooks/useMediaSocket";
-import {
-  Box,
-  Typography,
-  CircularProgress,
-  Container,
-} from "@mui/material";
+import { Box, Typography, CircularProgress, Container } from "@mui/material";
 import { getWallConfigBySlug } from "@/services/wallConfigService";
 import MosaicGrid from "@/app/components/MosaicGrid";
 import CardsGrid from "@/app/components/CardsGrid";
@@ -71,19 +66,19 @@ const BigScreenPage = () => {
   if (!media.length) {
     return (
       <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      height="100vh"
-      sx={{position:"relative"}}
-    >
-              <Box sx={{ position: "absolute", inset: 0, zIndex: 0 }}>
-                      <Shift />
-                    </Box>
-              <Typography variant="h6" textAlign="center" mt={4} zIndex={1}>
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        height="100vh"
+        sx={{ position: "relative" }}
+      >
+        <Box sx={{ position: "absolute", inset: 0, zIndex: 0 }}>
+          <Shift />
+        </Box>
+        <Typography variant="h6" textAlign="center" mt={4} color="#fff" zIndex={1}>
           No media available yet.
         </Typography>
-    </Box>
+      </Box>
     );
   }
 
