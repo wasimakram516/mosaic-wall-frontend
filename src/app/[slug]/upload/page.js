@@ -36,6 +36,27 @@ export default function UploadPage() {
   const [success, setSuccess] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
   const [mode, setMode] = useState(null);
+  const [deviceOrientation, setDeviceOrientation] = useState(0);
+
+  useEffect(() => {
+    const handleOrientationChange = () => {
+      const angle = window.screen.orientation?.angle || 0;
+      setDeviceOrientation(angle);
+    };
+
+    handleOrientationChange();
+    window.screen.orientation?.addEventListener(
+      "change",
+      handleOrientationChange
+    );
+
+    return () => {
+      window.screen.orientation?.removeEventListener(
+        "change",
+        handleOrientationChange
+      );
+    };
+  }, []);
 
   useEffect(() => {
     const loadWallConfigs = async () => {
@@ -100,40 +121,34 @@ export default function UploadPage() {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      const ctx = canvas.getContext("2d");
-  
-      const vw = video.videoWidth;
-      const vh = video.videoHeight;
-  
-      const isPortrait = vh > vw;
-  
-      // 1. Draw normal video frame to temp canvas
-      const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = vw;
-      tempCanvas.height = vh;
-      const tempCtx = tempCanvas.getContext("2d");
-      tempCtx.drawImage(video, 0, 0, vw, vh);
-  
-      // 2. Rotate to portrait if needed (landscape case)
-      if (!isPortrait) {
-        canvas.width = vh; // rotated width
-        canvas.height = vw; // rotated height
-        ctx.save();
-        ctx.translate(vh / 2, vw / 2); // center
-        ctx.rotate(Math.PI / 2); // 90 degrees
-        ctx.drawImage(tempCanvas, -vw / 2, -vh / 2);
-        ctx.restore();
+      const context = canvas.getContext("2d");
+
+      const isLandscape = window.innerWidth > window.innerHeight;
+
+      if (isLandscape) {
+        // Normal landscape capture
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0);
       } else {
-        canvas.width = vw;
-        canvas.height = vh;
-        ctx.drawImage(tempCanvas, 0, 0);
+        // Portrait mode: rotate canvas
+        canvas.width = video.videoHeight;
+        canvas.height = video.videoWidth;
+        context.save();
+        context.translate(canvas.width / 2, canvas.height / 2);
+        context.rotate((90 * Math.PI) / 180);
+        context.drawImage(video, -video.videoWidth / 2, -video.videoHeight / 2);
+        context.restore();
       }
-  
-      // 3. Convert to blob
-      canvas.toBlob((blob) => {
-        setCapturedImage(blob);
-        stopCamera();
-      }, "image/jpeg", 0.8);
+
+      canvas.toBlob(
+        (blob) => {
+          setCapturedImage(blob);
+          stopCamera();
+        },
+        "image/jpeg",
+        0.8
+      );
     }
   };
   
@@ -179,7 +194,7 @@ export default function UploadPage() {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ minHeight: "100vh", py: 2 }}>
+    <Container maxWidth="lg" sx={{ minHeight: "100vh", py: 2 }}>
       {/* Header with Branding */}
       <Box
         sx={{
@@ -296,12 +311,15 @@ export default function UploadPage() {
               muted
               style={{
                 width: "100%",
-                height: "300px",
+                height: "80vh",
                 objectFit: "cover",
                 borderRadius: "12px",
                 backgroundColor: "#000",
+                transform: `rotate(${-deviceOrientation}deg)`,
+                transformOrigin: "center center",
               }}
             />
+
             <canvas ref={canvasRef} style={{ display: "none" }} />
           </Box>
         </Paper>
@@ -318,7 +336,7 @@ export default function UploadPage() {
             alt="Captured"
             style={{
               width: "100%",
-              height: "300px",
+              height: "80vh",
               objectFit: "cover",
               borderRadius: "12px",
             }}
@@ -353,7 +371,7 @@ export default function UploadPage() {
       )}
 
       {/* Action Buttons */}
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mb: 3 }}>
         {!capturedImage ? (
           <Button
             variant="contained"

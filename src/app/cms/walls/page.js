@@ -275,7 +275,7 @@ export default function WallConfigsPage() {
                         }
                         aria-label="Big Screen"
                       >
-                        <ViewIcon fontSize="small" color="primary"/>
+                        <ViewIcon fontSize="small" color="primary" />
                       </IconButton>
                     </Tooltip>
                   </Box>
@@ -310,7 +310,7 @@ export default function WallConfigsPage() {
       )}
 
       {/* Create/Edit Modal */}
-      <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)}>
+      <Dialog open={isModalOpen} maxWidth="sm" fullWidth onClose={() => setIsModalOpen(false)}>
         <DialogTitle>
           {currentConfig ? "Edit Wall Config" : "Create New Wall Config"}
         </DialogTitle>
@@ -321,7 +321,7 @@ export default function WallConfigsPage() {
                 display: "flex",
                 flexDirection: "column",
                 gap: 2,
-                minWidth: "400px",
+                width: "100%",
               }}
             >
               <TextField
