@@ -12,11 +12,14 @@ import {
   Alert,
   CircularProgress,
   Chip,
+  IconButton,
 } from "@mui/material";
 import {
   CameraAlt as CameraIcon,
   Refresh as RefreshIcon,
   Send as SendIcon,
+  CameraAlt,
+  Close,
 } from "@mui/icons-material";
 import Image from "next/image";
 import { uploadPhoto } from "@/services/displayMediaService";
@@ -130,7 +133,7 @@ export default function UploadPage() {
       );
     }
   };
-  
+
   const retakePhoto = () => {
     setCapturedImage(null);
     setText("");
@@ -261,45 +264,75 @@ export default function UploadPage() {
 
       {/* Live Camera Feed */}
       {cameraOn && (
-        <Paper elevation={3} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-          <Box sx={{ position: "relative", mb: 2 }}>
-            {isLoading && (
-              <Box
-                sx={{
-                  position: "absolute",
-                  inset: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  bgcolor: "rgba(0,0,0,0.6)",
-                  borderRadius: 2,
-                  zIndex: 2,
-                }}
-              >
-                <Box sx={{ textAlign: "center", color: "white" }}>
-                  <CircularProgress size={32} sx={{ mb: 1 }} />
-                  <Typography variant="body2">Starting camera...</Typography>
-                </Box>
-              </Box>
-            )}
+        <Box
+          sx={{
+            position: "fixed",
+            inset: 0,
+            bgcolor: "#000",
+            zIndex: 1300,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* Close Button */}
+          <IconButton
+            onClick={stopCamera}
+            sx={{
+              position: "absolute",
+              top: 16,
+              right: 16,
+              zIndex: 10,
+              bgcolor: "rgba(0,0,0,0.6)",
+              color: "white",
+              "&:hover": { bgcolor: "rgba(0,0,0,0.9)" },
+            }}
+          >
+            <Close fontSize="large" />
+          </IconButton>
 
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              style={{
-                width: "100%",
-                height: "80vh",
-                objectFit: "cover",
-                borderRadius: "12px",
-                backgroundColor: "#000",
+          {/* Video Feed */}
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+
+          <canvas ref={canvasRef} style={{ display: "none" }} />
+
+          {/* Capture Button */}
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: 30,
+              width: "100%",
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
+            <IconButton
+              onClick={capturePhoto}
+              sx={{
+                width: 72,
+                height: 72,
+                borderRadius: "50%",
+                bgcolor: "white",
+                color: "black",
+                boxShadow: 6,
+                "&:hover": {
+                  bgcolor: "#f5f5f5",
+                },
               }}
-            />
-
-            <canvas ref={canvasRef} style={{ display: "none" }} />
+            >
+              <CameraAlt fontSize="large" />
+            </IconButton>
           </Box>
-        </Paper>
+        </Box>
       )}
 
       {/* Preview */}
